@@ -98,7 +98,7 @@ export default function HomePage() {
                   <div className="relative h-[500px] w-full">
                     <Image
                       src="/founder.jpg"
-                      alt="Tyler Ferguson, Founder — Trinity Finance"
+                      alt="Morgan Hall, Founder — Trinity Finance"
                       fill
                       className="object-cover object-top"
                       priority
@@ -110,7 +110,7 @@ export default function HomePage() {
 
                 {/* Name card */}
                 <div className="absolute -bottom-5 inset-x-4 rounded-xl bg-white px-5 py-3.5 shadow-2xl">
-                  <div className="font-bold text-[#0B2545]">Tyler Ferguson</div>
+                  <div className="font-bold text-[#0B2545]">Morgan Hall</div>
                   <div className="text-sm text-gray-500">Founder &amp; Principal</div>
                   <div className="mt-0.5 text-xs text-gray-400">Trinity Finance · Portsmouth, OH</div>
                 </div>
