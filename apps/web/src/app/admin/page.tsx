@@ -1,18 +1,26 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@trinity/db";
 
 export default async function AdminDashboard() {
-  const [totalApps, funded, docsReady, stalled] = await Promise.all([
-    prisma.application.count({ where: { deletedAt: null } }),
-    prisma.application.count({ where: { status: "FUNDED", deletedAt: null } }),
-    prisma.application.count({ where: { status: "UNDERWRITING", deletedAt: null } }),
-    prisma.application.count({ where: { status: "STALLED", deletedAt: null } }),
-  ]);
+  let totalApps = 0, funded = 0, docsReady = 0, stalled = 0;
+  let recentAuditLogs: Awaited<ReturnType<typeof prisma.auditLog.findMany>> = [];
 
-  const recentAuditLogs = await prisma.auditLog.findMany({
-    orderBy: { ts: "desc" },
-    take: 20,
-    include: { actor: { select: { email: true, role: true } } },
-  });
+  try {
+    [totalApps, funded, docsReady, stalled] = await Promise.all([
+      prisma.application.count({ where: { deletedAt: null } }),
+      prisma.application.count({ where: { status: "FUNDED", deletedAt: null } }),
+      prisma.application.count({ where: { status: "UNDERWRITING", deletedAt: null } }),
+      prisma.application.count({ where: { status: "STALLED", deletedAt: null } }),
+    ]);
+    recentAuditLogs = await prisma.auditLog.findMany({
+      orderBy: { ts: "desc" },
+      take: 20,
+      include: { actor: { select: { email: true, role: true } } },
+    });
+  } catch {
+    // DB not yet configured
+  }
 
   return (
     <div className="space-y-8">
