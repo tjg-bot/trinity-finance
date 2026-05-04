@@ -1,12 +1,10 @@
 "use client";
 
-/**
- * Offer comparison page - shows top 3-5 lender matches.
- */
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 
-export default function OffersPage() {
+function OffersContent() {
   const searchParams = useSearchParams();
   const applicationId = searchParams.get("app") ?? "";
   const router = useRouter();
@@ -149,5 +147,13 @@ export default function OffersPage() {
         </a>
       </p>
     </div>
+  );
+}
+
+export default function OffersPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[400px] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0B2545] border-t-transparent" /></div>}>
+      <OffersContent />
+    </Suspense>
   );
 }

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormRenderer } from "@/components/forms/FormRenderer";
-import { section1Fields } from "@trinity/forms";
-import { resolveRouting } from "@trinity/forms";
+import { section1Fields, resolveRouting } from "@trinity/forms";
 import { trpc } from "@/lib/trpc";
 
-export default function ApplyPage() {
+function ApplyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const refCode = searchParams.get("ref") ?? undefined;
@@ -22,30 +21,20 @@ export default function ApplyPage() {
 
   const handleCapture = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = await createDraft.mutateAsync({
-      email,
-      phone,
-      referralCode: refCode,
-    });
+    const result = await createDraft.mutateAsync({ email, phone, referralCode: refCode });
     setApplicationId(result.applicationId);
     setStep("form");
-
-    // Save resume token to localStorage
     localStorage.setItem(`trinity_resume_${result.applicationId}`, result.resumeToken);
   };
 
   const handleFormSubmit = async (values: Record<string, unknown>) => {
     if (!applicationId) return;
-
     const loanType = mapLoanTypeSelection(values["loanTypeSelection"] as string ?? "");
-
     await saveQuickApp.mutateAsync({
       applicationId,
       data: { ...values, businessEmail: email, cellPhone: phone },
       loanType,
     });
-
-    // Route to the appropriate section
     const nextPath = resolveRouting(values);
     router.push(`${nextPath}?app=${applicationId}`);
   };
@@ -124,11 +113,11 @@ export default function ApplyPage() {
     <div className="mx-auto max-w-2xl">
       <div className="mb-8">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-500">Step 1 of 2</span>
+          <span className="text-sm font-medium text-gray-500">Step 1 of 3</span>
           <span className="text-sm text-gray-400">Section 1: Finance Quick Application</span>
         </div>
         <div className="h-2 w-full rounded-full bg-gray-200">
-          <div className="h-2 w-1/2 rounded-full bg-[#C9A227] transition-all" />
+          <div className="h-2 w-1/3 rounded-full bg-[#C9A227] transition-all" />
         </div>
       </div>
 
@@ -142,6 +131,22 @@ export default function ApplyPage() {
         />
       </div>
     </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <div className="flex min-h-[400px] items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0B2545] border-t-transparent" />
+    </div>
+  );
+}
+
+export default function ApplyPage() {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <ApplyContent />
+    </Suspense>
   );
 }
 

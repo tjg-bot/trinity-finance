@@ -1,8 +1,6 @@
 "use client";
 
-/**
- * Document Vault - stoplight status dashboard for an application.
- */
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -11,7 +9,7 @@ import { getRequiredDocs, DOC_DISPLAY_NAMES } from "@trinity/ai";
 import type { LoanTypeKey } from "@trinity/ai";
 import type { DocType } from "@trinity/db";
 
-export default function VaultPage() {
+function VaultContent() {
   const searchParams = useSearchParams();
   const applicationId = searchParams.get("app") ?? "";
 
@@ -206,5 +204,13 @@ export default function VaultPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function VaultPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[400px] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0B2545] border-t-transparent" /></div>}>
+      <VaultContent />
+    </Suspense>
   );
 }

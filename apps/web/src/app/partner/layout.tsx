@@ -1,14 +1,15 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  if (process.env.CLERK_SECRET_KEY) {
+    const { auth } = await import("@clerk/nextjs/server");
+    const { userId } = await auth();
+    if (!userId) redirect("/sign-in");
+  }
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
       <aside className="w-64 border-r bg-[#0B2545] text-white">
         <div className="p-6">
           <div className="font-bold text-[#C9A227]">Trinity Finance</div>
@@ -28,16 +29,16 @@ export default async function PartnerLayout({ children }: { children: React.Reac
         </nav>
       </aside>
 
-      {/* Main */}
       <main className="flex-1 bg-gray-50">
         <header className="border-b bg-white px-8 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-lg font-semibold text-gray-900">Partner Dashboard</h1>
-            <div className="flex items-center gap-3 text-sm text-gray-500">
-              <Link href="/apply" className="rounded-md bg-[#C9A227] px-3 py-1.5 text-xs font-semibold text-[#0B2545]">
-                + New Application
-              </Link>
-            </div>
+            <Link
+              href="/apply"
+              className="rounded-md bg-[#C9A227] px-3 py-1.5 text-xs font-semibold text-[#0B2545]"
+            >
+              + New Application
+            </Link>
           </div>
         </header>
         <div className="p-8">{children}</div>

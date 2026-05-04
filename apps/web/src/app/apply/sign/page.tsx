@@ -1,16 +1,12 @@
 "use client";
 
-/**
- * Credit Authorization & Signature page.
- * Renders verbatim disclosure, captures canvas signature with IP + timestamp audit trail.
- */
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { SignaturePad } from "@trinity/ui";
 import { CREDIT_AUTHORIZATION_DISCLOSURE } from "@trinity/forms";
 
-export default function SignPage() {
+function SignContent() {
   const searchParams = useSearchParams();
   const applicationId = searchParams.get("app") ?? "";
   const router = useRouter();
@@ -142,5 +138,13 @@ export default function SignPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function SignPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[400px] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[#0B2545] border-t-transparent" /></div>}>
+      <SignContent />
+    </Suspense>
   );
 }
