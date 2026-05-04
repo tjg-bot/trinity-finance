@@ -1,0 +1,29 @@
+{
+  "name": "@trinity/worker",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@aws-sdk/client-s3": "^3.654.0",
+    "@aws-sdk/client-textract": "^3.654.0",
+    "@trinity/ai": "workspace:*",
+    "@trinity/db": "workspace:*",
+    "@trinity/pdf": "workspace:*",
+    "@trinity/stoplight": "workspace:*",
+    "bullmq": "^5.14.0",
+    "ioredis": "^5.4.1",
+    "resend": "^4.0.0",
+    "twilio": "^5.3.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2"
+  }
+}

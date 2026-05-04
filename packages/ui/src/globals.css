@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Trinity Finance Brand Colors */
+    --trinity-navy: #0B2545;
+    --trinity-gold: #C9A227;
+    --stoplight-green: #16A34A;
+    --stoplight-yellow: #EAB308;
+    --stoplight-red: #DC2626;
+
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 214 68% 16%; /* Trinity Navy #0B2545 */
+    --primary-foreground: 42 57% 47%; /* Trinity Gold #C9A227 */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 42 74% 46%; /* Trinity Gold */
+    --accent-foreground: 214 68% 16%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 214 68% 16%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 214 68% 8%;
+    --foreground: 210 40% 98%;
+    --card: 214 68% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 214 68% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 42 74% 46%;
+    --primary-foreground: 214 68% 8%;
+    --secondary: 214 68% 16%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 214 68% 12%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 42 74% 46%;
+    --accent-foreground: 214 68% 8%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 68% 16%;
+    --input: 214 68% 16%;
+    --ring: 42 74% 46%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  /* Legal disclosure text uses Source Serif 4 */
+  .legal-text {
+    font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  }
+}
+
+@layer components {
+  /* Stoplight status indicators */
+  .stoplight-green {
+    @apply bg-green-100 text-green-800 border-green-200;
+  }
+  .stoplight-yellow {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+  }
+  .stoplight-red {
+    @apply bg-red-100 text-red-800 border-red-200;
+  }
+  .stoplight-pending {
+    @apply bg-gray-100 text-gray-600 border-gray-200;
+  }
+
+  /* Trinity branded button */
+  .btn-trinity {
+    @apply bg-[#0B2545] text-[#C9A227] hover:bg-[#0d2d52] font-semibold;
+  }
+  .btn-gold {
+    @apply bg-[#C9A227] text-[#0B2545] hover:bg-[#b8911e] font-semibold;
+  }
+}

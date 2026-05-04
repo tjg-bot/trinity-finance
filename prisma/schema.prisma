@@ -1,0 +1,1020 @@
+// Trinity Finance - Prisma Schema
+// PostgreSQL 15 via Prisma ORM
+// All PII fields encrypted at rest (AES-256-GCM, AWS KMS)
+// Soft deletes via deletedAt on all core models
+// Full audit trail via AuditLog model
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  APPLICANT
+  AGENT
+  MANAGER
+  OWNER
+  BANK_USER
+  ADMIN
+}
+
+enum OrgType {
+  REFERRAL
+  BANK
+  INTERNAL
+}
+
+enum OrgTier {
+  OWNER
+  MANAGER
+  AGENT
+}
+
+enum LoanType {
+  EQUIPMENT_FINANCING
+  INVOICE_FACTORING
+  INVOICE_FINANCING
+  LINE_OF_CREDIT
+  MCA
+  SBA
+  UNSURE
+  DEBT_RELIEF
+}
+
+enum ApplicationStatus {
+  DRAFT
+  IN_REVIEW
+  DOCS_PENDING
+  UNDERWRITING
+  MATCHED
+  OFFER_SELECTED
+  FUNDED
+  DECLINED
+  SERVICING
+  STALLED
+}
+
+enum StoplightStatus {
+  PENDING
+  GREEN
+  YELLOW
+  RED
+}
+
+enum DocType {
+  GOVERNMENT_ID
+  VOIDED_CHECK
+  BANK_STATEMENT
+  TAX_RETURN_BUSINESS
+  TAX_RETURN_PERSONAL
+  EQUIPMENT_QUOTE
+  AR_AGING_REPORT
+  SAMPLE_INVOICE
+  CUSTOMER_LIST
+  PNL_YTD
+  BALANCE_SHEET
+  DEBT_SCHEDULE
+  BUSINESS_PLAN
+  FRANCHISE_AGREEMENT
+  REAL_ESTATE_APPRAISAL
+  MCA_CONTRACT
+  CREDIT_AUTHORIZATION
+  OTHER
+}
+
+enum MatchStatus {
+  PROPOSED
+  OFFERED
+  SELECTED
+  DECLINED
+}
+
+enum MarketplaceListingStatus {
+  ACTIVE
+  SOLD
+  CANCELLED
+}
+
+enum ServicingEventType {
+  PAYMENT_RECEIVED
+  BALANCE_CHECK
+  REFINANCE_TRIGGER
+  DELINQUENCY_ALERT
+  EVERGREEN_TRIGGER
+  STEP_UP_SUGGESTION
+}
+
+// ─────────────────────────────────────────────────────────────
+// CORE IDENTITY
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  phone          String?
+  role           Role      @default(APPLICANT)
+  clerkId        String    @unique
+  organizationId String?
+  firstName      String?
+  lastName       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization      Organization?     @relation("OrgMembers", fields: [organizationId], references: [id])
+  memberships       OrgMembership[]
+  applicantApps     Application[]     @relation("ApplicantApplications")
+  agentApps         Application[]     @relation("AgentApplications")
+  auditLogs         AuditLog[]        @relation("AuditActor")
+  signatures        Signature[]
+  plaidConnections  PlaidConnection[]
+
+  @@index([clerkId])
+  @@index([email])
+  @@index([role])
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  type      OrgType
+  parentId  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  parent      Organization?   @relation("OrgHierarchy", fields: [parentId], references: [id])
+  children    Organization[]  @relation("OrgHierarchy")
+  members     User[]          @relation("OrgMembers")
+  memberships OrgMembership[]
+  bankRules   BankRule[]
+  matches     Match[]
+
+  @@index([type])
+  @@index([parentId])
+}
+
+model OrgMembership {
+  id             String    @id @default(cuid())
+  userId         String
+  organizationId String
+  tier           OrgTier
+  bucketId       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([bucketId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// APPLICATION MASTER + LOAN-TYPE CHILDREN
+// ─────────────────────────────────────────────────────────────
+
+model Application {
+  id               String            @id @default(cuid())
+  loanType         LoanType
+  status           ApplicationStatus @default(DRAFT)
+  applicantUserId  String?
+  referralAgentId  String?
+  referralCode     String?
+  resumeToken      String?           @unique
+  creditMemo       Json?
+  underwritingScore Int?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+
+  applicant        User?             @relation("ApplicantApplications", fields: [applicantUserId], references: [id])
+  referralAgent    User?             @relation("AgentApplications", fields: [referralAgentId], references: [id])
+  quickApp         QuickApp?
+  equipmentApp     EquipmentApp?
+  factoringApp     FactoringApp?
+  invoiceFinApp    InvoiceFinancingApp?
+  locApp           LineOfCreditApp?
+  mcaApp           MCAApp?
+  sbaApp           SBAApp?
+  unsureApp        UnsureApp?
+  debtReliefApp    DebtReliefApp?
+  owners           Owner[]
+  tradeRefs        TradeReference[]
+  bankRefs         BankReference[]
+  accountantRefs   AccountantReference[]
+  mcaEntries       MCAEntry[]
+  documents        Document[]
+  documentRequests DocumentRequest[]
+  signatures       Signature[]
+  matches          Match[]
+  offers           Offer[]
+  funding          Funding?
+  plaidConnections PlaidConnection[]
+  servicingEvents  ServicingEvent[]
+  capitalEnh       CapitalEnhancement?
+  auditLogs        AuditLog[]
+
+  @@index([applicantUserId])
+  @@index([referralAgentId])
+  @@index([status])
+  @@index([loanType])
+  @@index([resumeToken])
+}
+
+model QuickApp {
+  id                      String  @id @default(cuid())
+  applicationId           String  @unique
+  // Contact
+  firstName               String
+  lastName                String
+  businessEmail           String
+  cellPhone               String
+  // Business Profile
+  legalBusinessName       String
+  entityType              String
+  entityTypeOther         String?
+  businessWebsite         String?
+  industry                String
+  industryOther           String?
+  natureOfBusiness        String
+  timeInBusiness          String
+  numW2Employees          String
+  num1099Employees        String
+  // Financial Overview
+  annualRevenue           String
+  netIncomeEbitda         String
+  ficoScore               String
+  bankAccountType         String
+  // Funding Details
+  useOfFunds              String
+  urgency                 String
+  backgroundInfo          String
+  homeOwnership           String
+  homeOwnershipOther      String?
+  desiredFundingAmount    String
+  // Current Debt
+  hasDebt                 Boolean @default(false)
+  totalDebtAmount         String?
+  totalMonthlyDebtPayment String?
+  hasHighInterestDebt     Boolean @default(false)
+  mcaDebtAmount           String?
+  mcaMonthlyPayment       String?
+  // Loan Type Selection
+  knowsLoanType           String
+  loanTypeSelection       String
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model EquipmentApp {
+  id                      String  @id @default(cuid())
+  applicationId           String  @unique
+  equipmentType           String
+  equipmentTypeOther      String?
+  sourcingMethod          String
+  equipmentValue          String
+  equipmentCondition      String
+  equipmentVendor         String
+  deliveryDate            String
+  tradeName               String?
+  stateIncorporated       String
+  businessAddress         String
+  mailingAddressDiff      Boolean @default(false)
+  mailingAddress          String?
+  equipmentAtAddress      String
+  equipmentLocation       String?
+  taxIdEin                String
+  timeInControl           String
+  businessPropertyOwn     String
+  businessPropertyOwnOther String?
+  placeOfOperation        String
+  placeOfOperationOther   String?
+  supplierName            String
+  supplierContactName     String
+  leaseTerm               String
+  leaseEndOption          String
+  leaseEndOptionOther     String?
+  numEquipmentPieces      String?
+  convictedOfCrime        Boolean @default(false)
+  convictedExplain        String?
+  hasBankruptcy           Boolean @default(false)
+  bankruptcyHowLongAgo    String?
+  hasPendingClaims        Boolean @default(false)
+  totalMonthlySales       String
+  annualGrossSales        String
+  additionalNotes         String?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model FactoringApp {
+  id                          String  @id @default(cuid())
+  applicationId               String  @unique
+  averageInvoiceValue         String
+  averageInvoiceTerms         String
+  paymentCollectionPeriod     String
+  percentageToFactor          String
+  totalArOutstanding          String
+  avgDaysOutstanding          String
+  numActiveClients            String
+  tradeName                   String?
+  stateIncorporated           String
+  businessAddress             String
+  mailingAddressDiff          Boolean @default(false)
+  mailingAddress              String?
+  taxIdEin                    String
+  timeInControl               String
+  businessNameChangedIn2Yrs   Boolean @default(false)
+  formerBusinessNames         String?
+  describeBusinessProducts    String
+  convictedOfCrime            Boolean @default(false)
+  convictedExplain            String?
+  hasBankruptcy               Boolean @default(false)
+  bankruptcyHowLongAgo        String?
+  hasPendingClaims            Boolean @default(false)
+  hasUccFilings               Boolean @default(false)
+  uccFilingsWith              String?
+  hasTaxesPastDue             Boolean @default(false)
+  taxesPastDueExplain         String?
+  avgMonthlyCardSales         String
+  totalMonthlySales           String
+  annualGrossSales            String
+  additionalNotes             String?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model InvoiceFinancingApp {
+  id                          String  @id @default(cuid())
+  applicationId               String  @unique
+  // Inherits all factoring fields
+  averageInvoiceValue         String
+  averageInvoiceTerms         String
+  paymentCollectionPeriod     String
+  percentageToFactor          String
+  totalArOutstanding          String
+  avgDaysOutstanding          String
+  numActiveClients            String
+  tradeName                   String?
+  stateIncorporated           String
+  businessAddress             String
+  mailingAddressDiff          Boolean @default(false)
+  mailingAddress              String?
+  taxIdEin                    String
+  timeInControl               String
+  businessNameChangedIn2Yrs   Boolean @default(false)
+  formerBusinessNames         String?
+  describeBusinessProducts    String
+  // Additional
+  otherEntityNames            Json?   // Array of up to 4 business names
+  mergerAcquisitionIn2Yrs     Boolean @default(false)
+  allOwnersCitizens           Boolean @default(true)
+  citizenshipExplain          String?
+  // Daily Contact
+  dailyContactName            String?
+  dailyContactTitle           String?
+  dailyContactPhone           String?
+  dailyContactMobile          String?
+  dailyContactEmail           String?
+  // A/R Info
+  totalNumCustomers           Int?
+  numDomesticCustomers        Int?
+  numForeignCustomers         Int?
+  openInvoicesDollarAmount    String?
+  numInvoicesPerMonth         Int?
+  termsDiscountsIncentives    String?
+  anticipatedMonthlyFinancing String?
+  receivablesPledged          Boolean @default(false)
+  receivablesPledgedTo        Json?   // Array of up to 5
+  hasBillAndHolds             Boolean @default(false)
+  hasGuaranteedSalesOrOffset  Boolean @default(false)
+  acceptsDeposits             Boolean @default(false)
+  // Legal
+  convictedOfCrime            Boolean @default(false)
+  convictedExplain            String?
+  hasBankruptcy               Boolean @default(false)
+  bankruptcyHowLongAgo        String?
+  hasPendingClaims            Boolean @default(false)
+  hasUccFilings               Boolean @default(false)
+  uccFilingsWith              String?
+  hasTaxesPastDue             Boolean @default(false)
+  taxesPastDueExplain         String?
+  // Revenue
+  avgMonthlyCardSales         String
+  totalMonthlySales           String
+  annualGrossSales            String
+  additionalNotes             String?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model LineOfCreditApp {
+  id                          String  @id @default(cuid())
+  applicationId               String  @unique
+  intendedUsageFrequency      String
+  tradeName                   String?
+  stateIncorporated           String
+  businessAddress             String
+  mailingAddressDiff          Boolean @default(false)
+  mailingAddress              String?
+  taxIdEin                    String
+  timeInControl               String
+  businessNameChangedIn2Yrs   Boolean @default(false)
+  formerBusinessNames         String?
+  describeBusiness            String
+  homeOwnership               String
+  homeOwnershipOther          String?
+  businessPropertyOwn         String
+  businessPropertyOwnOther    String?
+  placeOfOperation            String
+  placeOfOperationOther       String?
+  convictedOfCrime            Boolean @default(false)
+  convictedExplain            String?
+  hasBankruptcy               Boolean @default(false)
+  bankruptcyHowLongAgo        String?
+  hasPendingClaims            Boolean @default(false)
+  hasUccFilings               Boolean @default(false)
+  uccFilingsWith              String?
+  hasTaxesPastDue             Boolean @default(false)
+  taxesPastDueExplain         String?
+  avgMonthlyCardSales         String
+  totalMonthlySales           String
+  annualGrossSales            String
+  additionalNotes             String?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model MCAApp {
+  id                          String  @id @default(cuid())
+  applicationId               String  @unique
+  avgMonthlyGrossRevenue      String
+  numDailyTransactions        String
+  currentCardProcessor        String
+  cardProcessorOther          String?
+  avgDailyCreditCardSales     String
+  tradeName                   String?
+  stateIncorporated           String
+  businessAddress             String
+  mailingAddressDiff          Boolean @default(false)
+  mailingAddress              String?
+  taxIdEin                    String
+  timeInControl               String
+  businessNameChangedIn2Yrs   Boolean @default(false)
+  formerBusinessNames         String?
+  describeBusiness            String
+  homeOwnership               String
+  homeOwnershipOther          String?
+  businessPropertyOwn         String
+  businessPropertyOwnOther    String?
+  placeOfOperation            String
+  placeOfOperationOther       String?
+  convictedOfCrime            Boolean @default(false)
+  convictedExplain            String?
+  hasBankruptcy               Boolean @default(false)
+  bankruptcyHowLongAgo        String?
+  hasPendingClaims            Boolean @default(false)
+  hasUccFilings               Boolean @default(false)
+  uccFilingsWith              String?
+  hasTaxesPastDue             Boolean @default(false)
+  taxesPastDueExplain         String?
+  avgMonthlyCardSales         String
+  totalMonthlySales           String
+  annualGrossSales            String
+  additionalNotes             String?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model SBAApp {
+  id                          String  @id @default(cuid())
+  applicationId               String  @unique
+  isFranchisee                Boolean @default(false)
+  franchiseEntityName         String?
+  tradeName                   String?
+  stateIncorporated           String
+  businessAddress             String
+  mailingAddressDiff          Boolean @default(false)
+  mailingAddress              String?
+  taxIdEin                    String
+  timeInControl               String
+  businessNameChangedIn2Yrs   Boolean @default(false)
+  formerBusinessNames         String?
+  describeBusiness            String
+  otherEntityNames            Json?
+  mergerAcquisitionIn2Yrs     Boolean @default(false)
+  allOwnersCitizens           Boolean @default(true)
+  citizenshipExplain          String?
+  dailyContactName            String?
+  dailyContactTitle           String?
+  dailyContactPhone           String?
+  dailyContactMobile          String?
+  dailyContactEmail           String?
+  convictedOfCrime            Boolean @default(false)
+  convictedExplain            String?
+  hasBankruptcy               Boolean @default(false)
+  bankruptcyHowLongAgo        String?
+  hasPendingClaims            Boolean @default(false)
+  hasUccFilings               Boolean @default(false)
+  uccFilingsWith              String?
+  hasTaxesPastDue             Boolean @default(false)
+  taxesPastDueExplain         String?
+  avgMonthlyCardSales         String
+  totalMonthlySales           String
+  annualGrossSales            String
+  additionalNotes             String?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model UnsureApp {
+  id                          String  @id @default(cuid())
+  applicationId               String  @unique
+  isFranchisee                Boolean @default(false)
+  franchiseEntityName         String?
+  tradeName                   String?
+  stateIncorporated           String
+  businessAddress             String
+  mailingAddressDiff          Boolean @default(false)
+  mailingAddress              String?
+  taxIdEin                    String
+  timeInControl               String
+  businessNameChangedIn2Yrs   Boolean @default(false)
+  formerBusinessNames         String?
+  describeBusiness            String
+  otherEntityNames            Json?
+  mergerAcquisitionIn2Yrs     Boolean @default(false)
+  allOwnersCitizens           Boolean @default(true)
+  citizenshipExplain          String?
+  equityInOtherBusinesses     Boolean @default(false)
+  equityExplain               String?
+  dailyContactName            String?
+  dailyContactTitle           String?
+  dailyContactPhone           String?
+  dailyContactMobile          String?
+  dailyContactEmail           String?
+  convictedOfCrime            Boolean @default(false)
+  convictedExplain            String?
+  hasBankruptcy               Boolean @default(false)
+  bankruptcyHowLongAgo        String?
+  hasPendingClaims            Boolean @default(false)
+  hasUccFilings               Boolean @default(false)
+  uccFilingsWith              String?
+  hasTaxesPastDue             Boolean @default(false)
+  taxesPastDueExplain         String?
+  avgMonthlyCardSales         String
+  totalMonthlySales           String
+  annualGrossSales            String
+  aiRecommendation            Json?   // Gap Analysis output
+  additionalNotes             String?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model DebtReliefApp {
+  id                          String  @id @default(cuid())
+  applicationId               String  @unique
+  firstName                   String
+  lastName                    String
+  businessEmail               String
+  businessPhone               String
+  mobilePhone                 String?
+  companyWebsite              String?
+  tradeName                   String?
+  relationshipToBusiness      String
+  stateIncorporated           String
+  businessAddress             String
+  mailingAddressDiff          Boolean @default(false)
+  mailingAddress              String?
+  taxIdEin                    String
+  isBusinessOperational       Boolean @default(true)
+  timeInControl               String
+  businessNameChangedIn2Yrs   Boolean @default(false)
+  formerBusinessNames         String?
+  describeBusiness            String
+  numW2Employees              String
+  debtScheduleWorkbookUrl     String?
+  numLocations                Int?
+  isFranchisee                Boolean @default(false)
+  franchiseEntityName         String?
+  totalDebtAmount             String
+  totalMonthlyDebtPayment     String
+  hasHighInterestDebt         Boolean @default(false)
+  mcaDebtAmount               String?
+  mcaMonthlyPayment           String?
+  thisYearGrossRevenue        String
+  lastYearGrossRevenue        String
+  twoYearsAgoGrossRevenue     String
+  additionalNotes             String?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+// ─────────────────────────────────────────────────────────────
+// PRINCIPALS / OWNERS
+// ─────────────────────────────────────────────────────────────
+
+model Owner {
+  id                String    @id @default(cuid())
+  applicationId     String
+  fullName          String
+  bestPhone         String
+  title             String
+  homeAddress       String
+  // PII - stored encrypted
+  dateOfBirth       String    // AES-256-GCM encrypted
+  bestEmail         String
+  personalFico      String
+  ssn               String    // AES-256-GCM encrypted
+  dlState           String
+  dlNumber          String    // AES-256-GCM encrypted
+  ownershipPercent  String
+  equityInOtherBiz  Boolean   @default(false)
+  equityExplain     String?
+  isPrimary         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// REFERENCES
+// ─────────────────────────────────────────────────────────────
+
+model TradeReference {
+  id              String    @id @default(cuid())
+  applicationId   String
+  companyName     String
+  phone           String
+  address         String
+  contactName     String
+  contactEmail    String?
+  association     String?
+  relationshipLen String?
+  createdAt       DateTime  @default(now())
+  deletedAt       DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+}
+
+model BankReference {
+  id            String    @id @default(cuid())
+  applicationId String
+  bankName      String
+  address       String
+  contactPerson String?
+  phone         String?
+  // PII - encrypted
+  accountNumbers String   // AES-256-GCM encrypted (JSON array)
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+}
+
+model AccountantReference {
+  id            String    @id @default(cuid())
+  applicationId String
+  accountantName String
+  address       String
+  email         String?
+  telephone     String?
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+}
+
+model MCAEntry {
+  id            String    @id @default(cuid())
+  applicationId String
+  lenderName    String
+  amount        String
+  createdAt     DateTime  @default(now())
+  deletedAt     DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// DOCUMENTS
+// ─────────────────────────────────────────────────────────────
+
+model Document {
+  id                String          @id @default(cuid())
+  applicationId     String
+  docType           DocType
+  s3Key             String
+  s3Bucket          String
+  originalFilename  String
+  mimeType          String
+  sizeBytes         Int
+  stoplightStatus   StoplightStatus @default(PENDING)
+  aiAnalysis        Json?
+  clarificationNote String?
+  uploadedByUserId  String?
+  virusScanPassed   Boolean?
+  textractJobId     String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+
+  application      Application      @relation(fields: [applicationId], references: [id])
+  documentRequests DocumentRequest[]
+
+  @@index([applicationId])
+  @@index([stoplightStatus])
+  @@index([docType])
+}
+
+model DocumentRequest {
+  id              String    @id @default(cuid())
+  applicationId   String
+  docType         DocType
+  documentId      String?
+  followUpCount   Int       @default(0)
+  lastFollowUpAt  DateTime?
+  followUpHistory Json      @default("[]")
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+  document    Document?   @relation(fields: [documentId], references: [id])
+
+  @@index([applicationId])
+  @@index([docType])
+}
+
+// ─────────────────────────────────────────────────────────────
+// SIGNATURES
+// ─────────────────────────────────────────────────────────────
+
+model Signature {
+  id            String   @id @default(cuid())
+  applicationId String
+  signerUserId  String?
+  signerName    String
+  signerTitle   String
+  businessName  String
+  // PII - s3Key to encrypted PNG
+  signaturePngS3Key String // AES-256-GCM encrypted reference
+  ip            String
+  userAgent     String
+  signedAt      DateTime @default(now())
+  deletedAt     DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+  signer      User?       @relation(fields: [signerUserId], references: [id])
+
+  @@index([applicationId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// BANK RULES & MATCHING
+// ─────────────────────────────────────────────────────────────
+
+model BankRule {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  criteria       Json      // DSCR thresholds, FICO bands, industries, states, deal size, TIB
+  offerTemplates Json      // Tiered rate/term logic
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  matches      Match[]
+
+  @@index([organizationId])
+}
+
+model Match {
+  id              String      @id @default(cuid())
+  applicationId   String
+  organizationId  String
+  bankRuleId      String
+  score           Int         // 0-100
+  projectedTerms  Json        // rate, term, monthly payment, total cost, time-to-close
+  status          MatchStatus @default(PROPOSED)
+  isAnonymized    Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  deletedAt       DateTime?
+
+  application  Application @relation(fields: [applicationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  bankRule     BankRule    @relation(fields: [bankRuleId], references: [id])
+  offer        Offer?
+
+  @@index([applicationId])
+  @@index([organizationId])
+  @@index([score])
+}
+
+model Offer {
+  id               String    @id @default(cuid())
+  applicationId    String
+  matchId          String    @unique
+  rate             Float
+  termMonths       Int
+  amount           Float
+  fees             Float
+  selectedAt       DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+  match       Match       @relation(fields: [matchId], references: [id])
+  funding     Funding?
+
+  @@index([applicationId])
+}
+
+model Funding {
+  id                    String    @id @default(cuid())
+  applicationId         String    @unique
+  offerId               String    @unique
+  amount                Float
+  fundedDate            DateTime
+  originatorCommission  Float
+  underwritingFee       Float
+  servicingSpread       Float
+  lenderSubmissionPdfS3Key String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+  offer       Offer       @relation(fields: [offerId], references: [id])
+
+  @@index([applicationId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// PHASE 3 - PLAID + SERVICING
+// ─────────────────────────────────────────────────────────────
+
+model PlaidConnection {
+  id              String    @id @default(cuid())
+  applicationId   String
+  userId          String
+  itemId          String    @unique
+  // PII - encrypted
+  accessToken     String    // AES-256-GCM encrypted
+  institutionId   String?
+  institutionName String?
+  lastSyncAt      DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([applicationId])
+}
+
+model ServicingEvent {
+  id            String             @id @default(cuid())
+  applicationId String
+  eventType     ServicingEventType
+  payload       Json
+  triggeredAt   DateTime           @default(now())
+  resolvedAt    DateTime?
+  notifiedAt    DateTime?
+  createdAt     DateTime           @default(now())
+  deletedAt     DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+
+  @@index([applicationId])
+  @@index([eventType])
+}
+
+// ─────────────────────────────────────────────────────────────
+// PHASE 5 - MARKETPLACE
+// ─────────────────────────────────────────────────────────────
+
+model MarketplaceListing {
+  id             String                   @id @default(cuid())
+  bankId         String
+  loanIds        Json                     // Array of Funding IDs
+  price          Float
+  status         MarketplaceListingStatus @default(ACTIVE)
+  performanceGrade String?
+  projectedYield Float?
+  tags           Json                     @default("[]")
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  deletedAt      DateTime?
+
+  trades MarketplaceTrade[] @relation("ListingTrades")
+
+  @@index([bankId])
+  @@index([status])
+}
+
+model MarketplaceTrade {
+  id          String    @id @default(cuid())
+  listingId   String
+  buyerOrgId  String
+  sellerOrgId String
+  price       Float
+  executedAt  DateTime  @default(now())
+  deletedAt   DateTime?
+
+  listing MarketplaceListing @relation("ListingTrades", fields: [listingId], references: [id])
+
+  @@index([listingId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// PHASE 6 - CAPITAL ENHANCEMENT
+// ─────────────────────────────────────────────────────────────
+
+model CapitalEnhancement {
+  id                    String    @id @default(cuid())
+  applicationId         String    @unique
+  nmtcEligible          Boolean   @default(false)
+  ozEligible            Boolean   @default(false)
+  ssbciEligible         Boolean   @default(false)
+  stateGuaranteeEligible Boolean  @default(false)
+  madeInAmericaEligible Boolean   @default(false)
+  eligibilityDetail     Json      @default("{}")
+  reportingDocS3Keys    Json      @default("[]")
+  processedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUDIT + WEBHOOKS
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorUserId   String?
+  action        String   // e.g., "READ_PII", "STATUS_CHANGE", "DOC_UPLOAD"
+  entity        String   // e.g., "Application", "Document"
+  entityId      String
+  applicationId String?
+  before        Json?
+  after         Json?
+  ip            String?
+  userAgent     String?
+  ts            DateTime @default(now())
+
+  actor       User?       @relation("AuditActor", fields: [actorUserId], references: [id])
+  application Application? @relation(fields: [applicationId], references: [id])
+
+  @@index([actorUserId])
+  @@index([entityId])
+  @@index([applicationId])
+  @@index([ts])
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  source      String   // "plaid" | "twilio" | "resend" | "clerk"
+  eventType   String
+  payload     Json
+  processedAt DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+
+  @@index([source])
+  @@index([processedAt])
+}

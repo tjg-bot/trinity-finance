@@ -1,0 +1,17 @@
+{
+  "name": "@trinity/stoplight",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-textract": "^3.654.0",
+    "@trinity/ai": "workspace:*",
+    "@trinity/db": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  }
+}
