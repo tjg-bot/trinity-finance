@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./src/audit": "./src/audit.ts",
+    "./src/encryption": "./src/encryption.ts",
+    "./src/retention": "./src/retention.ts"
   },
   "scripts": {
     "db:push": "prisma db push",
