@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   transpilePackages: ["@trinity/ui", "@trinity/db", "@trinity/forms", "@trinity/ai", "@trinity/pdf", "@trinity/stoplight"],
   experimental: {
     serverComponentsExternalPackages: ["@prisma/client", "puppeteer"],
@@ -33,7 +32,6 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // No tracking on /apply pages
         source: "/apply/(.*)",
         headers: [
           { key: "Cache-Control", value: "no-store, no-cache, must-revalidate" },
