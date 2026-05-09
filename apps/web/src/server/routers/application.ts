@@ -114,7 +114,7 @@ export const applicationRouter = router({
   /**
    * Save Quick Application (Section 1) data.
    */
-  saveQuickApp: authedProcedure
+  saveQuickApp: publicProcedure
     .input(
       z.object({
         applicationId: z.string(),
@@ -123,7 +123,6 @@ export const applicationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      await assertCanAccessApplication(ctx, input.applicationId);
 
       const app = await ctx.prisma.application.findUnique({
         where: { id: input.applicationId },
@@ -157,7 +156,7 @@ export const applicationRouter = router({
       });
 
       await auditLog({
-        actorUserId: ctx.dbUser.id,
+        actorUserId: ctx.dbUser?.id,
         action: AuditActions.FORM_SAVE,
         entity: "Application",
         entityId: input.applicationId,
