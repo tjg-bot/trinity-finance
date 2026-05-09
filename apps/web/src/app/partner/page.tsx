@@ -28,8 +28,8 @@ export default function PartnerDashboardPage() {
         <KpiCard label="Funded This Month" value={funded.length.toString()} icon="✅" />
         <KpiCard
           label="Total Pipeline"
-          value={`$${(apps?.items.reduce((sum, a) => {
-            const amt = parseFloat(a.quickApp?.desiredFundingAmount ?? "0");
+          value={`$${((apps?.items ?? []).reduce((sum, a) => {
+            const amt = parseFloat(a.quickApp?.desiredFundingAmount || "0");
             return sum + (isNaN(amt) ? 0 : amt);
           }, 0) / 1000).toFixed(0)}K`}
           icon="💰"
@@ -68,7 +68,7 @@ export default function PartnerDashboardPage() {
                 </p>
                 <p className="text-sm text-gray-500">
                   {app.loanType.replace(/_/g, " ")} -
-                  ${parseFloat(app.quickApp?.desiredFundingAmount ?? "0").toLocaleString()}
+                  ${(parseFloat(app.quickApp?.desiredFundingAmount || "0") || 0).toLocaleString()}
                 </p>
               </div>
               <div className="flex items-center gap-3">
