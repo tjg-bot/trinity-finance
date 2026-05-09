@@ -17,15 +17,14 @@ const STATUS_META: Record<Status, { label: string; color: string; bg: string; ic
 export default function BankFilesPage() {
   const [activeStatus, setActiveStatus] = useState<Status | "ALL">("ALL");
 
-  const { data, isLoading } = trpc.matching.getBankPipeline.useQuery({
-    limit: 50,
-    status: activeStatus === "ALL" ? undefined : activeStatus,
-  });
+  // Always fetch all so counts are accurate across tabs
+  const { data, isLoading } = trpc.matching.getBankPipeline.useQuery({ limit: 100 });
 
-  const items = data?.items ?? [];
+  const allItems = data?.items ?? [];
+  const items = activeStatus === "ALL" ? allItems : allItems.filter((i) => i.status === activeStatus);
 
   const counts = STATUSES.reduce<Record<string, number>>((acc, s) => {
-    acc[s] = data?.items.filter((i) => i.status === s).length ?? 0;
+    acc[s] = allItems.filter((i) => i.status === s).length;
     return acc;
   }, {});
 

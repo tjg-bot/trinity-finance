@@ -41,10 +41,10 @@ export default function PartnerTeamPage() {
               </div>
             </div>
             <div className="ml-auto">
-              {me.memberships.map((m) => {
-                const meta = ROLE_META[m.role] ?? ROLE_META.AGENT;
+              {me.memberships.map((m, i) => {
+                const meta = ROLE_META[m.tier] ?? ROLE_META.AGENT;
                 return (
-                  <span key={m.id} className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.color}`}>
+                  <span key={i} className={`rounded-full px-3 py-1 text-xs font-semibold ${meta.color}`}>
                     {meta.label}
                   </span>
                 );
