@@ -28,6 +28,7 @@ function VaultContent() {
   const submitClarification = trpc.document.submitClarification.useMutation();
 
   const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [clarificationInputs, setClarificationInputs] = useState<Record<string, string>>({});
 
   const loanType = (appSummary?.loanType ?? "UNSURE") as LoanTypeKey;
@@ -43,6 +44,7 @@ function VaultContent() {
   const handleUpload = async (docType: DocType, file: File) => {
     if (!applicationId) return;
     setUploading(docType);
+    setUploadError(null);
 
     try {
       const { uploadUrl, documentId } = await getUploadUrl.mutateAsync({
@@ -53,16 +55,16 @@ function VaultContent() {
         sizeBytes: file.size,
       });
 
-      // Upload directly to S3 using presigned URL
       await fetch(uploadUrl, {
         method: "PUT",
         body: file,
         headers: { "Content-Type": file.type },
       });
 
-      // Confirm and enqueue stoplight job
       await confirmUpload.mutateAsync({ documentId, applicationId });
       await refetch();
+    } catch {
+      setUploadError("Upload failed. Please check your connection and try again.");
     } finally {
       setUploading(null);
     }
@@ -194,6 +196,12 @@ function VaultContent() {
           );
         })}
       </div>
+
+      {uploadError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {uploadError}
+        </div>
+      )}
 
       {allGreen && (
         <div className="rounded-lg border-2 border-green-500 bg-green-50 p-6 text-center">

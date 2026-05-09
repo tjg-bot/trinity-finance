@@ -24,8 +24,12 @@ export default function QualifyPage() {
 
   const startIntake = async () => {
     setStarted(true);
-    const result = await chat.mutateAsync({ history: [] });
-    setMessages([{ role: "assistant", content: result.response }]);
+    try {
+      const result = await chat.mutateAsync({ history: [] });
+      setMessages([{ role: "assistant", content: result.response }]);
+    } catch {
+      setMessages([{ role: "assistant", content: "Sorry, the AI qualifier is temporarily unavailable. Please try the full application instead." }]);
+    }
   };
 
   const sendMessage = async () => {
@@ -36,16 +40,20 @@ export default function QualifyPage() {
     setMessages(newHistory);
     setInput("");
 
-    const result = await chat.mutateAsync({
-      history: newHistory,
-      message: input,
-    });
+    try {
+      const result = await chat.mutateAsync({
+        history: newHistory,
+        message: input,
+      });
 
-    const assistantMsg: IntakeMessage = { role: "assistant", content: result.response };
-    setMessages([...newHistory, assistantMsg]);
+      const assistantMsg: IntakeMessage = { role: "assistant", content: result.response };
+      setMessages([...newHistory, assistantMsg]);
 
-    if (result.complete && result.gapAnalysis) {
-      setGapAnalysis(result.gapAnalysis);
+      if (result.complete && result.gapAnalysis) {
+        setGapAnalysis(result.gapAnalysis);
+      }
+    } catch {
+      setMessages([...newHistory, { role: "assistant", content: "Something went wrong. Please try again or start the full application." }]);
     }
   };
 
