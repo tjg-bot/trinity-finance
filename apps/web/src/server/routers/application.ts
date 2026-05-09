@@ -323,4 +323,35 @@ export const applicationRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Public status lookup by email — lets applicants check deal status without login.
+   * Returns only safe, non-sensitive fields.
+   */
+  getStatusByEmail: publicProcedure
+    .input(z.object({ email: z.string().email() }))
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findFirst({
+        where: { email: input.email, deletedAt: null },
+      });
+      if (!user) return { applications: [] };
+
+      const apps = await ctx.prisma.application.findMany({
+        where: { applicantUserId: user.id, deletedAt: null },
+        select: {
+          id: true,
+          status: true,
+          loanType: true,
+          createdAt: true,
+          updatedAt: true,
+          quickApp: {
+            select: { legalBusinessName: true, desiredFundingAmount: true },
+          },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 10,
+      });
+
+      return { applications: apps };
+    }),
 });
