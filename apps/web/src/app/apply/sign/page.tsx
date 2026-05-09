@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { SignaturePad } from "@trinity/ui";
@@ -14,6 +14,14 @@ function SignContent() {
   const [signerName, setSignerName] = useState("");
   const [signerTitle, setSignerTitle] = useState("");
   const [businessName, setBusinessName] = useState("");
+
+  useEffect(() => {
+    if (!applicationId) return;
+    const savedBusiness = sessionStorage.getItem(`trinity_${applicationId}_businessName`);
+    const savedSigner = sessionStorage.getItem(`trinity_${applicationId}_signerName`);
+    if (savedBusiness) setBusinessName(savedBusiness);
+    if (savedSigner) setSignerName(savedSigner);
+  }, [applicationId]);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
   const capture = trpc.signature.capture.useMutation();
@@ -40,6 +48,17 @@ function SignContent() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      {/* Progress */}
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-500">Step 3 of 3</span>
+          <span className="text-sm text-gray-400">Authorization &amp; Signature</span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-gray-200">
+          <div className="h-2 w-full rounded-full bg-[#C9A227] transition-all" />
+        </div>
+      </div>
+
       <div>
         <h1 className="text-3xl font-bold text-[#0B2545]">Credit Authorization</h1>
         <p className="mt-2 text-gray-600">
@@ -123,9 +142,16 @@ function SignContent() {
         </div>
 
         <div className="flex items-center justify-between border-t pt-4">
-          <div className="text-sm text-gray-500">
-            <div>Date: {new Date().toLocaleDateString("en-US")}</div>
+          <div className="flex flex-col gap-1">
+            <div className="text-sm text-gray-500">Date: {new Date().toLocaleDateString("en-US")}</div>
             <div className="text-xs text-gray-400">Timestamp recorded on submission</div>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="mt-1 text-left text-xs text-gray-400 underline hover:text-gray-600"
+            >
+              Back to previous step
+            </button>
           </div>
 
           <button

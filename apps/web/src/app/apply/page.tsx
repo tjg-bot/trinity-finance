@@ -46,6 +46,11 @@ function ApplyContent() {
     } catch {
       // DB not connected — route locally without saving
     }
+    // Persist key fields for Step 3 auto-population
+    const firstName = values["firstName"] as string ?? "";
+    const lastName = values["lastName"] as string ?? "";
+    sessionStorage.setItem(`trinity_${applicationId}_businessName`, values["legalBusinessName"] as string ?? "");
+    sessionStorage.setItem(`trinity_${applicationId}_signerName`, `${firstName} ${lastName}`.trim());
     const nextPath = resolveRouting(values);
     router.push(`${nextPath}?app=${applicationId}`);
   };

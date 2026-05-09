@@ -45,7 +45,7 @@ export function FormRenderer({
     formState: { errors },
   } = useForm({
     defaultValues: defaultValues ?? {},
-    mode: "onBlur",
+    mode: "onSubmit",
   });
 
   const allValues = watch();
