@@ -157,7 +157,7 @@ export function resolveRouting(quickAppValues: Record<string, unknown>): string 
     "Equipment Financing": "/apply/equipment",
     "Merchant Cash Advance (MCA)": "/apply/mca",
     "Invoice Financing": "/apply/invoice-financing",
-    "Invoice Factoring": "/apply/invoice-factoring",
+    "Invoice Factoring": "/apply/factoring",
     "I'd Like Some Help Figuring Out What's Best": "/apply/unsure",
   };
 
