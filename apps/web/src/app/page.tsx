@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Trinity Finance — Commercial Lending Made Simple",
+  title: "Trinity Finance - Commercial Lending Made Simple",
   description:
     "AI-powered commercial lending platform. Equipment financing, SBA loans, lines of credit, invoice factoring and more. Portsmouth, Ohio.",
   robots: { index: true, follow: true },
@@ -105,7 +105,7 @@ export default function HomePage() {
             <div className="lg:col-span-3">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#C9A227]/30 bg-[#C9A227]/10 px-4 py-1.5 text-sm font-medium text-[#C9A227]">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#C9A227]" />
-                Portsmouth, Ohio — Serving Businesses Nationwide
+                Portsmouth, Ohio - Serving Businesses Nationwide
               </div>
 
               <h1 className="mt-6 font-serif text-5xl font-semibold leading-[1.08] text-white xl:text-6xl 2xl:text-7xl">
@@ -116,7 +116,7 @@ export default function HomePage() {
 
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/60">
                 AI-powered underwriting meets personal expertise. Access our 50+
-                lender network and go from application to funded in days — not weeks.
+                lender network and go from application to funded in days - not weeks.
               </p>
 
               <div className="mt-10 flex flex-wrap gap-4">
@@ -132,7 +132,7 @@ export default function HomePage() {
                   className="inline-flex items-center gap-2 rounded-xl border border-[#C9A227]/40 px-8 py-4 text-base font-semibold text-[#C9A227] transition-all hover:border-[#C9A227]/60 hover:bg-[#C9A227]/10"
                 >
                   <Sparkles className="h-4 w-4" />
-                  AI Qualifier — 2 min
+                  AI Qualifier - 2 min
                 </Link>
               </div>
 
@@ -162,7 +162,7 @@ export default function HomePage() {
                   <div className="relative h-[520px] w-full">
                     <Image
                       src="/founder.jpg"
-                      alt="Founder — Trinity Finance"
+                      alt="Founder - Trinity Finance"
                       fill
                       className="object-cover object-center"
                       priority
@@ -401,7 +401,7 @@ export default function HomePage() {
                   href="/apply"
                   className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B2545] px-10 py-4 text-lg font-bold text-[#C9A227] shadow-xl transition-all hover:-translate-y-0.5 hover:bg-[#0d2d52] sm:w-auto"
                 >
-                  Apply Now — Free
+                  Apply Now - Free
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <Link
@@ -557,7 +557,7 @@ const LOAN_TYPES = [
 const AI_FEATURES = [
   {
     title: "Intelligent Intake",
-    desc: "Our 10-question AI qualifier (powered by Claude) determines the right product and routes you to the optimal path — no wasted time, no wrong applications.",
+    desc: "Our 10-question AI qualifier (powered by Claude) determines the right product and routes you to the optimal path - no wasted time, no wrong applications.",
     Icon: Brain,
   },
   {
@@ -567,7 +567,7 @@ const AI_FEATURES = [
   },
   {
     title: "Smart Lender Matching",
-    desc: "We compare your profile against 50+ lenders' credit boxes to surface only deals that will close — maximizing approval rates and offer quality.",
+    desc: "We compare your profile against 50+ lenders' credit boxes to surface only deals that will close - maximizing approval rates and offer quality.",
     Icon: Zap,
   },
 ];
