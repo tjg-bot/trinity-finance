@@ -1,6 +1,6 @@
 /**
  * Anthropic Claude API wrappers for Trinity Finance.
- * - claude-opus-4-7: underwriting, document analysis (complex reasoning)
+ * - claude-opus-4-6: underwriting, document analysis (complex reasoning)
  * - claude-haiku-4-5-20251001: 10-question agentic intake (fast, cheap)
  */
 import Anthropic from "@anthropic-ai/sdk";
@@ -73,7 +73,7 @@ current ratio, quick ratio. Identify 3-5 strengths and 3-5 risks. Recommend deal
 Rate overall as STRONG / ACCEPTABLE / MARGINAL / DECLINE.`;
 
   const response = await client.messages.create({
-    model: "claude-opus-4-7",
+    model: "claude-opus-4-6",
     max_tokens: 4096,
     messages: [{ role: "user", content: userPrompt }],
     system: systemPrompt,
@@ -177,7 +177,7 @@ Recommend GREEN (all pass), YELLOW (flagged but acceptable - ask for clarificati
   ];
 
   const response = await client.messages.create({
-    model: "claude-opus-4-7",
+    model: "claude-opus-4-6",
     max_tokens: 2048,
     messages,
     system: systemPrompt,
@@ -227,7 +227,7 @@ Available loan types: Equipment Financing, Invoice Factoring, Invoice Financing,
 Rank top 3 by fit (1 = best). Include reasoning, strengths, and concerns for each.`;
 
   const response = await client.messages.create({
-    model: "claude-opus-4-7",
+    model: "claude-opus-4-6",
     max_tokens: 2048,
     messages: [{ role: "user", content: userPrompt }],
     system: systemPrompt,
